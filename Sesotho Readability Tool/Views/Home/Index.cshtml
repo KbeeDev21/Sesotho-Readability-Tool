@@ -1,8 +1,30 @@
-﻿@{
-    ViewData["Title"] = "Home Page";
+﻿@model Sesotho_Readability_Tool.Models.ReadabilityModel
+
+@{
+    ViewBag.Title = "Sesotho Readability Demo";
 }
 
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
-</div>
+<h2>Sesotho Readability Demo</h2>
+
+@using (Html.BeginForm())
+{
+    <textarea name="InputText" rows="10" cols="80">@Model?.InputText</textarea>
+    <br />
+    <button type="submit">Analyze</button>
+}
+
+@if (Model != null && Model.InputText != null)
+{
+    <h3>Results:</h3>
+    <p><strong>Average Word Length:</strong> @Model.AverageWordLength</p>
+    <p><strong>Average Sentence Length:</strong> @Model.AverageSentenceLength</p>
+    <p><strong>Readability Score:</strong> @Model.ReadabilityScore</p>
+
+    <h4>Highlighted Long Words:</h4>
+    <p>
+        @foreach (var word in Model.LongWords)
+        {
+            <span style="background-color: yellow;">@word</span>
+        }
+    </p>
+}
