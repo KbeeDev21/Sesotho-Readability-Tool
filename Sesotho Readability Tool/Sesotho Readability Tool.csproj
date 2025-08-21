@@ -7,4 +7,8 @@
     <RootNamespace>Sesotho_Readability_Tool</RootNamespace>
   </PropertyGroup>
 
+  <ItemGroup>
+    <PackageReference Include="Swashbuckle.AspNetCore.Swagger" Version="9.0.3" />
+  </ItemGroup>
+
 </Project>
