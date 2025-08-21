@@ -1,42 +1,43 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Sesotho_Readability_Tool.Models;
+using Sesotho_Readability_Tool.Models.Sesotho_Readability_Tool.Models;
+using Sesotho_Readability_Tool.Services;
 
 namespace Sesotho_Readability_Tool.Controllers
 {
     public class ReadabilityController : Controller
     {
+        private readonly ReadabilityService _readabilityService;
+
+        public ReadabilityController(ReadabilityService readabilityService)
+        {
+            _readabilityService = readabilityService;
+        }
+
         public IActionResult Index()
         {
             return View();
         }
 
         [HttpPost]
-        public ActionResult Index(ReadabilityModel model)
+        public IActionResult Analyze(InputModel input, IFormFile? file)
         {
-            if (!string.IsNullOrWhiteSpace(model.InputText))
-            {
-                var tokens = TokenizeText(model.InputText);
-                var sentences = SplitIntoSentences(model.InputText);
+            string text = input.Text ?? "";
 
-                model.AverageWordLength = tokens.Average(w => w.Length);
-                model.AverageSentenceLength = sentences.Average(s => s.Split(' ').Length);
-                model.ReadabilityScore = model.AverageWordLength + model.AverageSentenceLength; // Basic formula
-                model.LongWords = tokens.Where(w => w.Length > 8).Distinct().ToList();
+            if (file != null && file.Length > 0)
+            {
+                using var reader = new StreamReader(file.OpenReadStream());
+                text = reader.ReadToEnd();
             }
 
-            return View(model);
-        }
+            if (string.IsNullOrWhiteSpace(text))
+            {
+                ViewBag.Error = "Please enter text or upload a file.";
+                return View("Index");
+            }
 
-        private List<string> TokenizeText(string text)
-        {
-            // Naive tokenizer for Sesotho – improve later
-            var separators = new[] { ' ', '.', ',', '!', '?', ':', ';', '\n', '\r' };
-            return text.Split(separators, StringSplitOptions.RemoveEmptyEntries).ToList();
-        }
-
-        private List<string> SplitIntoSentences(string text)
-        {
-            return text.Split(new[] { '.', '?', '!' }, StringSplitOptions.RemoveEmptyEntries).ToList();
+            var result = _readabilityService.CalculateDCI(text);
+            return View("Index", result);
         }
     }
 }

@@ -11,48 +11,47 @@ namespace Sesotho_Readability_Tool.Services
 {
     public class ReadabilityService
     {
-        private readonly HashSet<string> commonWords;
+        private readonly HashSet<string> _commonWords;
 
-        public ReadabilityService(string commonWordsFilePath)
+        public ReadabilityService(string wordListPath)
         {
-            if (!File.Exists(commonWordsFilePath))
-                throw new FileNotFoundException("Common words file not found.", commonWordsFilePath);
+            if (!File.Exists(wordListPath))
+                throw new FileNotFoundException("Word list not found", wordListPath);
 
-            commonWords = new HashSet<string>(
-                File.ReadAllLines(commonWordsFilePath)
-                    .Select(w => w.Trim().ToLower()));
+            // Load common Sesotho words into a HashSet for quick lookup
+            _commonWords = File.ReadAllLines(wordListPath)
+                               .Select(w => w.Trim().ToLower())
+                               .ToHashSet();
         }
 
-        private int CountSentences(string text)
+        // Main method: calculates DCI and returns detailed result
+        public ReadabilityResult CalculateDCI(string text)
         {
-            var sentences = Regex.Split(text, @"[.!?]+")
-                .Where(s => !string.IsNullOrWhiteSpace(s));
-            return sentences.Count();
-        }
+            if (string.IsNullOrWhiteSpace(text))
+                return new ReadabilityResult();
 
-        private List<string> TokenizeWords(string text)
-        {
-            return Regex.Matches(text.ToLower(), @"\b\w+\b")
-                .Cast<Match>()
-                .Select(m => m.Value)
-                .ToList();
-        }
+            // Split text into words
+            var words = text.Split(new char[] { ' ', '\n', '\r', '\t', '.', ',', ';', '!', '?' },
+                                   StringSplitOptions.RemoveEmptyEntries)
+                            .Select(w => w.Trim().ToLower())
+                            .ToArray();
 
-        public DCIResult CalculateDCI(string text)
-        {
-            int sentenceCount = CountSentences(text);
-            var words = TokenizeWords(text);
-            int wordCount = words.Count;
+            int totalWords = words.Length;
 
-            if (sentenceCount == 0 || wordCount == 0)
-                return new DCIResult(0, wordCount, sentenceCount, 0);
+            // Identify difficult words (not in the common words list)
+            var difficultWordsList = words.Where(w => !_commonWords.Contains(w)).Distinct().ToArray();
+            int difficultWords = difficultWordsList.Length;
 
-            int difficultWordCount = words.Count(w => !commonWords.Contains(w));
+            // Example DCI calculation: (number of difficult words / total words) * 100
+            double dci = totalWords > 0 ? (difficultWords * 100.0 / totalWords) : 0;
 
-            double dci = 4.66547 + 0.14199 * ((double)wordCount / sentenceCount)
-                         + 0.03264 * (((double)difficultWordCount / wordCount) * 100);
-
-            return new DCIResult(dci, wordCount, sentenceCount, difficultWordCount);
+            return new ReadabilityResult
+            {
+                TotalWords = totalWords,
+                DifficultWords = difficultWords,
+                DCI = Math.Round(dci, 2),
+                DifficultWordList = difficultWordsList
+            };
         }
     }
 }
