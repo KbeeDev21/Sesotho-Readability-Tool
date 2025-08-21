@@ -28,7 +28,7 @@ var app = builder.Build();
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
-    app.UseSwaggerUI();
+    app.UseSwagger();
 }
 
 app.MapPost("/api/readability/dci", (InputModel input, ReadabilityService service) =>
